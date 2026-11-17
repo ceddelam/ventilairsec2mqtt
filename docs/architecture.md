@@ -1,8 +1,9 @@
 # Architecture
 
 Phase 1 is the protocol core: framing, decoding, orders and the link to the EnOcean stick. It
-has no MQTT and no Home Assistant code; the bridge of phase 2 builds on the API below. Radio
-facts refer to [protocol.md](protocol.md).
+has no MQTT and no Home Assistant code. Phase 2 is the MQTT bridge (`src/bridge/`, entry point
+`src/main.ts`), built on the phase 1 API. Radio facts refer to [protocol.md](protocol.md), MQTT
+topics and entities to [mqtt-interface.md](mqtt-interface.md).
 
 ## Layers
 
@@ -92,6 +93,83 @@ const result = await link.send(buildSettingsTelegram({ functionByte: fn, oneShot
 - **Base ID**: `forceBaseId` is an explicit opt-in; the write is attempted at most once per
   `StickConnection` and logged as a warning.
 
+## Phase 2: MQTT bridge
+
+```text
+main.ts           CLI, options, logging, signals                               main.ts, bridge/cli.ts
+  └─ startApp     composition: state file, broker, StickConnection, mqtt.js    bridge/app.ts
+       └─ Bridge  link events → models → MQTT; MQTT orders → telegrams         bridge/bridge.ts
+            ├─ UnitModel / AssistantModel   JSON states                        bridge/*-model.ts
+            ├─ discovery + entity catalog   device-based discovery payloads    bridge/discovery.ts, entities.ts, i18n.ts
+            ├─ order parsing                validation, never clamped          bridge/commands.ts
+            └─ trackers                     availability, stick problem        bridge/watchdog.ts
+```
+
+`Bridge` owns no connection: it listens to a `BridgeLink` (the `StickConnection` events
+`connected`, `disconnected`, `portSwitched`, `incident`, `telegram`, and `send`) and publishes
+through a `MqttPublisher` (`connected`, `publish`). The caller subscribes to
+`bridge.subscriptions()`, forwards messages to `bridge.handleMessage()` and calls
+`bridge.onMqttConnected()` after each broker (re)connection. Timers, clock and logger are
+injected, so every behaviour is tested with manual timers and doubles.
+
+| Module | Role |
+|---|---|
+| `bridge/config.ts` | Options file (`/data/options.json` by default): strings trimmed, empty = unset, types, ranges, ID formats and Base ID constraints checked; every problem listed in one `ConfigError`; unknown keys are warnings. |
+| `bridge/supervisor.ts` | `resolveBroker`: external broker when `mqtt_host` is set, else `GET http://supervisor/services/mqtt` with `SUPERVISOR_TOKEN` (`BrokerConfigError` on missing token, unreachable Supervisor or no service). |
+| `bridge/state-store.ts` | `/data/state.json` by default: `boost_duration`, `holiday_duration`, learned `assistant_id`. Missing or corrupt file → defaults (logged); writes go to a temp file renamed over the real one, one at a time. |
+| `bridge/unit-model.ts` | Unit JSON state from `CMD 0`–`8`: absent field → last value kept; raw value outside the known table or disabled setpoint → `null`; derived values (`filter_days_left`, `problem` with `error_codes` / `error_labels`, `self_test` with `self_test_results`, `paired_sensors`, probes by position, `last_seen`, `signal_strength`); optional equipment (`features`) and device card facts. |
+| `bridge/assistant-model.ts` | Assistant JSON state; battery = round(raw × 100 / 6), raw kept in `battery_raw`. |
+| `bridge/entities.ts`, `bridge/i18n.ts` | Entity catalog (platform, category, class, unit, options, ranges, attributes, required equipment) and English / French names. |
+| `bridge/discovery.ts` | One retained message per device on `<discovery_prefix>/device/<prefix>_<id>/config`: `dev`, `o` (name, version, `homepage` of package.json), shared `state_topic`, `availability` (bridge + device, `availability_mode: all`), `qos`, `cmps`. Value templates read the device JSON (`value_json.get(...)`, so a missing key renders `None` = unknown). |
+| `bridge/commands.ts` | Order parsing for `<prefix>/<vmi_id>/set` (JSON) and `…/set/<key>` (raw): booleans `true`/`false`/`ON`/`OFF`, integers as numbers or strings (`"25.0"` accepted), setpoints `off` or °C; invalid or unknown keys reject the whole order. |
+| `bridge/watchdog.ts` | `AvailabilityTracker` (offline 30 min after the last frame, armed at start) and `IncidentTracker` (stick problem cleared 30 min after the last incident). |
+| `bridge/bridge.ts` | The behaviour below. |
+| `bridge/app.ts` | `startApp`: loads the state file, resolves the broker, creates the `StickConnection` and the mqtt.js client (last will `offline` on `<prefix>/bridge/state`, QoS 1, retained states), wires them to a `Bridge`; `stop()` publishes `offline`, closes the stick and the client. |
+| `bridge/log.ts` | Timestamped lines (`<ISO time> <LEVEL> <message>`) on stdout at `log_level` (`debug`, `info`, `warning`, `error`); raw frames at debug. |
+
+### Behaviour choices
+
+- **Sender ID**: `sender_id` option, else the Base ID read at each connection; a warning when the
+  option lies outside Base ID + 0…127. Unit status is decoded only from frames addressed to it
+  (`classifyTelegram` with `receiverIds`); frames from the unit to anyone else only refresh the
+  unit's availability.
+- **Unit discovery** is published once `CMD 4`, `5`, `6` and `7` have each been received (the
+  entity set depends on them), then again whenever the payload changes. A component that
+  disappears is first published as `{"p": "<platform>"}` (removal, as the Home Assistant
+  documentation describes), then the device is published without it. Optional equipment:
+  Hydro'R / SolarR from `CMD 4`; water loop, solar and bypass probes from the positions in the
+  last `CMD 5` / `CMD 6`; bypass 2 / 3 when their slot reports a known position or an opening
+  other than 0 and 255. The components published before a restart are not known, so a removal
+  only happens within one run.
+- **Availability**: `online` on the first frame of the device, `offline` after 30 min without
+  one (also for a device never heard since start). Nothing is published before.
+- **Republish**: after each broker connection and on `online` on `<discovery_prefix>/status`:
+  bridge `online`, discovery of the three devices, states and known availabilities.
+  The unit state is first published once a status frame has been received in this run, so a
+  restart does not replace the retained state of the previous run with an almost empty one.
+- **Orders**: one radio frame per order (several JSON keys share it); `boost` / `holiday` `ON` use
+  the stored durations; `boost_duration` / `holiday_duration` are stored only. Orders run one at
+  a time. The optimistic state (and `boost_ends_at` / `holiday_ends_at`, the `ends_at`
+  attributes) is published once the stick confirms the transmission; the next `CMD 0` corrects
+  it, and an `ends_at` is cleared when the unit reports the end (or computed from the minutes
+  left when a firmware reports them). `sync_clock` sends a separate `CMD 1` frame.
+- **Function-byte orders** before the first `CMD 0` are **queued**: the whole order waits (later
+  ones are merged into it), a refresh request (rank 9 = `1`) is sent at once to get the status,
+  and the order is sent with the received function byte; it is dropped with a warning after
+  15 min.
+- **Clock**: sent after each stick (re)connection and every hour when `sync_clock` is on, in the
+  local time of the process (`TZ`).
+- **Pairing**: teach-in queries are answered with the phase 1 policy (`accept_pairing`, at most
+  every 10 min, only after 15 min without a frame from the unit addressed to us).
+- **Assistant ID**: the option wins and is never overridden. Otherwise it is learnt from the
+  sender of Ventilairsec frames addressed to the unit, and the unit's paired sensor list
+  (`CMD 8`, profile Assistant) overrides it; the learnt ID is stored. A replaced Assistant device
+  is removed (empty retained discovery, state and availability); so is a stored one when the
+  option names another.
+- **Stick problem**: incidents from the link (`transmission_not_confirmed`, `no_answer`) and
+  `machine_id_mismatch` (the `CMD 3` frame is then ignored); attribute `reason` = last incident.
+- **Paired sensors**: each series of consecutive `CMD 8` frames replaces the list.
+
 ## Tests
 
 `npm test` runs `node:test` directly on the TypeScript sources. Expected values are worked out
@@ -99,3 +177,10 @@ by hand from protocol.md on the frames of `fixtures/`; the whole corpus goes thr
 parsing, classification and decoding. Transports are tested against an emulated stick: a local
 TCP server (ser2net-like) and the `serialport` mock binding. Supervision tests use in-memory
 transports and durations of a few milliseconds.
+
+Bridge tests (`test/bridge/`) use a fake link, a fake MQTT client, an in-memory state store and
+manual timers (`test/helpers/fake-timers.ts`); radio telegrams are asserted byte for byte.
+`npm run test:integration` (`test/integration/*.e2e.ts`) starts a Mosquitto container
+(`eclipse-mosquitto`, random local port, removed afterwards), runs `startApp` against the
+emulated TCP stick, feeds corpus telegrams and checks the retained discovery and states, then the
+radio telegram produced by an MQTT order. It is skipped when Docker or the image is missing.

@@ -31,9 +31,9 @@ ventilation units to MQTT over EnOcean, published on GitHub with images on ghcr.
 
 ## Phase 2 — MQTT bridge
 
-- [ ] Options, Supervisor or external broker, optional TLS.
-- [ ] Device discovery, availability, republish on `homeassistant/status`.
-- [ ] Integration test against a Mosquitto container.
+- [x] Options, Supervisor or external broker, optional TLS.
+- [x] Device discovery, availability, republish on `homeassistant/status`.
+- [x] Integration test against a Mosquitto container.
 
 ## Phase 3 — Home Assistant app packaging
 

@@ -120,12 +120,15 @@ it computed as an attribute of the switch (`ends_at`), cleared when the unit rep
 |---|---|---|---|
 | `temperature` | sensor | °C | — |
 | `humidity` | sensor | %, humidity | — |
-| `battery` | sensor | %, battery | D |
+| `battery` | sensor | %, battery; raw × 100 / 6, rounded (encoding still open, protocol.md § 4); attribute `raw` | D |
 | `signal_strength` | sensor | dBm | D |
 | `last_seen` | sensor | timestamp | D |
 
 Device card: "Ventilairsec Assistant", identifier `ventilairsec2mqtt_<assistant_id>`,
-`via_device`: the bridge. Created only when `assistant_id` is set.
+`via_device`: the bridge. `assistant_id` is optional: when empty, the app learns it from the
+unit's paired sensor list (`CMD 8`, profile Assistant) and from the sender of `D1-079-00` frames
+addressed to the unit. Unit status is only decoded from frames addressed to our sender ID, so the
+unit's short frames to the Assistant are never mistaken for status, known Assistant ID or not.
 
 ## 5. Bridge
 
@@ -178,11 +181,19 @@ JSON on `<prefix>/<vmi_id>/set` or raw value on `<prefix>/<vmi_id>/set/<key>`:
 ## 8. Behaviour
 
 - Clock sync every hour (`sync_clock` option, on by default).
+- After each stick connection, a refresh request (rank 9 = `1`) asks the unit for its full status,
+  so entities appear without waiting for the next periodic status.
 - Automatic answer to pairing requests (`accept_pairing` option, protocol.md § 7).
 - Fallback port (`fallback_port`): switch after 3 failures, back to the primary port as soon as it
   answers (probe every 5 min).
 - Sender ID: `sender_id` option, otherwise the stick's Base ID. `force_base_id` rewrites the Base
   ID (limited operation, logged as a warning).
+- Values "kept by the app" (`boost_duration`, `holiday_duration`) and the learned Assistant ID are
+  stored in a small JSON file (`/data/state.json` in the app, path configurable) and survive
+  restarts.
+- Supervisor broker: when `mqtt_host` is empty, read host, port, user, password and TLS flag from
+  the Supervisor services API (`http://supervisor/services/mqtt`, `SUPERVISOR_TOKEN`).
+- Options are read from `/data/options.json` in the app (path configurable for other uses).
 - Options: `serial_port`, `fallback_port`, `vmi_id`, `assistant_id`, `sender_id`,
   `force_base_id`, `sync_clock`, `accept_pairing`, `topic_prefix`, `discovery_prefix`,
   `language`, `log_level`, `mqtt_host`, `mqtt_port`, `mqtt_user`, `mqtt_password`, `mqtt_tls`.

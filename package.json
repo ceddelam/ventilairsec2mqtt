@@ -4,16 +4,24 @@
   "private": true,
   "description": "Bridge between Ventilairsec ventilation units (EnOcean MSC D1-079) and MQTT",
   "license": "MIT",
+  "homepage": "https://github.com/ceddelam/ventilairsec2mqtt",
   "type": "module",
   "engines": {
     "node": ">=22"
   },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "bin": {
+    "ventilairsec2mqtt": "./dist/main.js"
+  },
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
+    },
+    "./bridge": {
+      "types": "./dist/bridge/index.d.ts",
+      "default": "./dist/bridge/index.js"
     }
   },
   "scripts": {
@@ -22,9 +30,12 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "test": "node --test 'test/**/*.test.ts'",
-    "check": "npm run typecheck && npm run lint && npm test"
+    "check": "npm run typecheck && npm run lint && npm test",
+    "test:integration": "node --test --test-concurrency=1 'test/integration/*.e2e.ts'",
+    "start": "node dist/main.js"
   },
   "dependencies": {
+    "mqtt": "^5.16.1",
     "serialport": "^13.0.0"
   },
   "devDependencies": {
