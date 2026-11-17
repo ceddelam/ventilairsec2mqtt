@@ -8,7 +8,7 @@ ventilation units to MQTT over EnOcean, published on GitHub with images on ghcr.
 - [x] Name: `ventilairsec2mqtt`.
 - [x] Licence: MIT, rewrite from facts (see [sources.md](sources.md)).
 - [x] Language: strict TypeScript on Node LTS; dependencies `mqtt`, `serialport`.
-- [x] Docs and code in English.
+- [x] Docs, code and Home Assistant texts in English only (no second language).
 - [x] New, cleaner MQTT interface and entities: [mqtt-interface.md](mqtt-interface.md).
 
 ## Phase 0 — Groundwork
@@ -38,7 +38,7 @@ ventilation units to MQTT over EnOcean, published on GitHub with images on ghcr.
 ## Phase 3 — Home Assistant app packaging
 
 - [ ] `config.yaml` (amd64/aarch64, `mqtt:want`, no port), Dockerfile on
-  `ghcr.io/home-assistant/base` without `build.yaml`, `apparmor.txt`, en/fr translations, README,
+  `ghcr.io/home-assistant/base` without `build.yaml`, `apparmor.txt`, English translations, README,
   DOCS, CHANGELOG, icon and logo.
 - [ ] Security rating 8; starts as a local app.
 

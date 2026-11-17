@@ -2,7 +2,7 @@
  * Entity catalog of the three devices (mqtt-interface.md § 3–5): platform, category, class,
  * unit, options and which JSON state keys feed the state and the attributes.
  */
-import type { EntityKey } from './i18n.ts';
+import type { EntityKey } from './names.ts';
 
 /** Home Assistant MQTT platforms used. */
 export type Platform = 'sensor' | 'binary_sensor' | 'switch' | 'select' | 'number' | 'button';

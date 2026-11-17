@@ -32,7 +32,6 @@ const SETTINGS: BridgeSettings = {
   acceptPairing: true,
   topicPrefix: 'ventilairsec2mqtt',
   discoveryPrefix: 'homeassistant',
-  language: 'en',
 };
 const APP = { name: 'ventilairsec2mqtt', version: '1.2.3', supportUrl: undefined };
 const MIN = 60_000;

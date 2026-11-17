@@ -100,7 +100,7 @@ main.ts           CLI, options, logging, signals                               m
   └─ startApp     composition: state file, broker, StickConnection, mqtt.js    bridge/app.ts
        └─ Bridge  link events → models → MQTT; MQTT orders → telegrams         bridge/bridge.ts
             ├─ UnitModel / AssistantModel   JSON states                        bridge/*-model.ts
-            ├─ discovery + entity catalog   device-based discovery payloads    bridge/discovery.ts, entities.ts, i18n.ts
+            ├─ discovery + entity catalog   device-based discovery payloads    bridge/discovery.ts, entities.ts, names.ts
             ├─ order parsing                validation, never clamped          bridge/commands.ts
             └─ trackers                     availability, stick problem        bridge/watchdog.ts
 ```
@@ -119,7 +119,7 @@ injected, so every behaviour is tested with manual timers and doubles.
 | `bridge/state-store.ts` | `/data/state.json` by default: `boost_duration`, `holiday_duration`, learned `assistant_id`. Missing or corrupt file → defaults (logged); writes go to a temp file renamed over the real one, one at a time. |
 | `bridge/unit-model.ts` | Unit JSON state from `CMD 0`–`8`: absent field → last value kept; raw value outside the known table or disabled setpoint → `null`; derived values (`filter_days_left`, `problem` with `error_codes` / `error_labels`, `self_test` with `self_test_results`, `paired_sensors`, probes by position, `last_seen`, `signal_strength`); optional equipment (`features`) and device card facts. |
 | `bridge/assistant-model.ts` | Assistant JSON state; battery = round(raw × 100 / 6), raw kept in `battery_raw`. |
-| `bridge/entities.ts`, `bridge/i18n.ts` | Entity catalog (platform, category, class, unit, options, ranges, attributes, required equipment) and English / French names. |
+| `bridge/entities.ts`, `bridge/names.ts` | Entity catalog (platform, category, class, unit, options, ranges, attributes, required equipment) and entity names (English only). |
 | `bridge/discovery.ts` | One retained message per device on `<discovery_prefix>/device/<prefix>_<id>/config`: `dev`, `o` (name, version, `homepage` of package.json), shared `state_topic`, `availability` (bridge + device, `availability_mode: all`), `qos`, `cmps`. Value templates read the device JSON (`value_json.get(...)`, so a missing key renders `None` = unknown). |
 | `bridge/commands.ts` | Order parsing for `<prefix>/<vmi_id>/set` (JSON) and `…/set/<key>` (raw): booleans `true`/`false`/`ON`/`OFF`, integers as numbers or strings (`"25.0"` accepted), setpoints `off` or °C; invalid or unknown keys reject the whole order. |
 | `bridge/watchdog.ts` | `AvailabilityTracker` (offline 30 min after the last frame, armed at start) and `IncidentTracker` (stick problem cleared 30 min after the last incident). |

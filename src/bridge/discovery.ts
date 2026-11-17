@@ -4,7 +4,6 @@
  */
 import type { EnOceanId } from '../hex.ts';
 import type { UnitType } from '../msc/unit.ts';
-import type { Language } from './config.ts';
 import {
   ASSISTANT_ENTITIES,
   BRIDGE_ENTITIES,
@@ -14,7 +13,7 @@ import {
   type Feature,
   type Platform,
 } from './entities.ts';
-import { entityName } from './i18n.ts';
+import { entityName } from './names.ts';
 
 /** Fixed prefix of identifiers and unique IDs (never collides with another integration). */
 export const ID_PREFIX = 'ventilairsec2mqtt';
@@ -30,7 +29,6 @@ export interface AppInfo {
 export interface DiscoveryContext {
   readonly topicPrefix: string;
   readonly discoveryPrefix: string;
-  readonly language: Language;
   readonly app: AppInfo;
   readonly vmiId: EnOceanId;
 }
@@ -124,12 +122,14 @@ function component(
   id: string,
   stateTopic: string,
   commandTopic: (key: string) => string,
-  language: Language,
+  entityIdPrefix: string,
 ): Record<string, unknown> {
   const c: Record<string, unknown> = {
     p: def.platform,
-    name: entityName(def.key, language),
+    name: entityName(def.key),
     unique_id: uniqueId(id, def.key),
+    // Fixed English entity IDs, independent of the names (Home Assistant adds `_2` on collision).
+    default_entity_id: `${def.platform}.${entityIdPrefix}_${def.key}`,
   };
   if (def.category !== undefined) c.entity_category = def.category;
   if (def.deviceClass !== undefined) c.device_class = def.deviceClass;
@@ -160,6 +160,7 @@ function origin(app: AppInfo): Record<string, unknown> {
 function message(
   ctx: DiscoveryContext,
   id: string,
+  entityIdPrefix: string,
   device: Record<string, unknown>,
   stateTopic: string,
   availabilityTopics: readonly string[],
@@ -170,7 +171,7 @@ function message(
   const cmps: Record<string, unknown> = {};
   const components = new Map<string, Platform>();
   for (const def of entities) {
-    cmps[def.key] = component(def, id, stateTopic, t.setKey, ctx.language);
+    cmps[def.key] = component(def, id, stateTopic, t.setKey, entityIdPrefix);
     components.set(def.key, def.platform);
   }
   for (const gone of removed) {
@@ -225,6 +226,7 @@ export function unitDiscovery(
   return message(
     ctx,
     ctx.vmiId,
+    'ventilairsec',
     device,
     t.device(ctx.vmiId),
     [t.bridgeAvailability, t.availability(ctx.vmiId)],
@@ -242,6 +244,7 @@ export function assistantDiscovery(
   return message(
     ctx,
     assistantId,
+    'ventilairsec_assistant',
     {
       identifiers: [`${ID_PREFIX}_${assistantId}`],
       name: 'Ventilairsec Assistant',
@@ -262,6 +265,7 @@ export function bridgeDiscovery(ctx: DiscoveryContext): DiscoveryMessage {
   return message(
     ctx,
     `bridge_${ctx.vmiId}`,
+    ID_PREFIX,
     {
       identifiers: [bridgeIdentifier(ctx)],
       name: ctx.app.name,

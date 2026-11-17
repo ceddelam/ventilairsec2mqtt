@@ -29,11 +29,9 @@ export {
   ConfigError,
   DEFAULT_OPTIONS_PATH,
   DEFAULT_STATE_PATH,
-  LANGUAGES,
   loadOptions,
   parseOptions,
   type ExternalBroker,
-  type Language,
   type Options,
   type ParsedOptions,
 } from './config.ts';
@@ -59,7 +57,7 @@ export {
   type Feature,
   type Platform,
 } from './entities.ts';
-export { entityName, type EntityKey } from './i18n.ts';
+export { entityName, type EntityKey } from './names.ts';
 export { createConsoleLogger, LOG_LEVELS, type LogLevel, type LogSink } from './log.ts';
 export {
   BOOST_DURATION,

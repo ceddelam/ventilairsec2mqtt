@@ -42,7 +42,6 @@ describe('parseOptions', () => {
       acceptPairing: true,
       topicPrefix: 'ventilairsec2mqtt',
       discoveryPrefix: 'homeassistant',
-      language: 'en',
       logLevel: 'info',
       mqtt: undefined,
     });
@@ -60,7 +59,6 @@ describe('parseOptions', () => {
       accept_pairing: false,
       topic_prefix: ' vmi/house ',
       discovery_prefix: 'ha',
-      language: ' FR ',
       log_level: 'debug',
       mqtt_host: ' localhost ',
       mqtt_port: 1884,
@@ -77,7 +75,6 @@ describe('parseOptions', () => {
     assert.equal(options.acceptPairing, false);
     assert.equal(options.topicPrefix, 'vmi/house');
     assert.equal(options.discoveryPrefix, 'ha');
-    assert.equal(options.language, 'fr');
     assert.equal(options.logLevel, 'debug');
     assert.deepEqual(options.mqtt, {
       host: 'localhost',
@@ -124,7 +121,6 @@ describe('parseOptions', () => {
       sync_clock: 'yes',
       topic_prefix: 'a/+/b',
       discovery_prefix: '/homeassistant',
-      language: 'de',
       log_level: 'verbose',
       mqtt_host: 'localhost',
       mqtt_port: 70000,
@@ -144,7 +140,6 @@ describe('parseOptions', () => {
         'separated by "/" (no wildcard, no leading or trailing "/")',
       'discovery_prefix: "/homeassistant" must be MQTT topic levels made of letters, digits, "_" ' +
         'or "-" separated by "/" (no wildcard, no leading or trailing "/")',
-      'language: expected one of en, fr, got "de"',
     ]);
   });
 

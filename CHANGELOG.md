@@ -22,7 +22,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follo
   reconnection, silence detection, fallback port, optional Base ID write.
 - Architecture notes: `docs/architecture.md`; tests on the frame corpus.
 - MQTT bridge: options file and Supervisor or external broker, state file, unit / Assistant /
-  bridge JSON states, availability, Home Assistant device discovery (English or French names),
+  bridge JSON states, availability, Home Assistant device discovery (fixed English entity IDs),
   orders with validation and optimistic state, clock sync, automatic pairing answer, Assistant ID
   learning; entry point `ventilairsec2mqtt [options.json]`.
 - End-to-end test against a Mosquitto container: `npm run test:integration`.

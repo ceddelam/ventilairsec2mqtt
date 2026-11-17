@@ -21,12 +21,11 @@ import {
   type EntityDef,
   type Feature,
 } from '../../src/bridge/entities.ts';
-import { entityName, namedKeys } from '../../src/bridge/i18n.ts';
+import { entityName, namedKeys } from '../../src/bridge/names.ts';
 
 const CTX: DiscoveryContext = {
   topicPrefix: 'ventilairsec2mqtt',
   discoveryPrefix: 'homeassistant',
-  language: 'en',
   app: { name: 'ventilairsec2mqtt', version: '1.2.3', supportUrl: 'https://example.invalid/x' },
   vmiId: '0400AA01',
 };
@@ -138,6 +137,7 @@ describe('unit discovery', () => {
       p: 'select',
       name: 'Mode',
       unique_id: 'ventilairsec2mqtt_0400AA01_mode',
+      default_entity_id: 'select.ventilairsec_mode',
       options: ['standby', 'eco', 'standard', 'comfort'],
       icon: 'mdi:fan',
       value_template: "{{ value_json.get('mode') }}",
@@ -147,6 +147,7 @@ describe('unit discovery', () => {
       p: 'switch',
       name: 'Boost',
       unique_id: 'ventilairsec2mqtt_0400AA01_boost',
+      default_entity_id: 'switch.ventilairsec_boost',
       icon: 'mdi:fan-plus',
       value_template:
         "{% set v = value_json.get('boost') %}{{ 'None' if v is none else ('ON' if v else 'OFF') }}",
@@ -158,6 +159,7 @@ describe('unit discovery', () => {
       p: 'number',
       name: 'Boost duration',
       unique_id: 'ventilairsec2mqtt_0400AA01_boost_duration',
+      default_entity_id: 'number.ventilairsec_boost_duration',
       entity_category: 'config',
       unit_of_measurement: 'min',
       min: 5,
@@ -181,6 +183,7 @@ describe('unit discovery', () => {
       p: 'button',
       name: 'Refresh',
       unique_id: 'ventilairsec2mqtt_0400AA01_refresh',
+      default_entity_id: 'button.ventilairsec_refresh',
       entity_category: 'diagnostic',
       icon: 'mdi:refresh',
       command_topic: 'ventilairsec2mqtt/0400AA01/set/refresh',
@@ -193,6 +196,7 @@ describe('unit discovery', () => {
       p: 'sensor',
       name: 'Airflow',
       unique_id: 'ventilairsec2mqtt_0400AA01_airflow',
+      default_entity_id: 'sensor.ventilairsec_airflow',
       device_class: 'volume_flow_rate',
       unit_of_measurement: 'm³/h',
       state_class: 'measurement',
@@ -215,6 +219,7 @@ describe('unit discovery', () => {
       p: 'binary_sensor',
       name: 'Problem',
       unique_id: 'ventilairsec2mqtt_0400AA01_problem',
+      default_entity_id: 'binary_sensor.ventilairsec_problem',
       device_class: 'problem',
       value_template:
         "{% set v = value_json.get('problem') %}{{ 'None' if v is none else ('ON' if v else 'OFF') }}",
@@ -287,11 +292,24 @@ describe('unit discovery', () => {
     });
   });
 
-  it('uses French names with language fr', () => {
-    const fr = cmps(unitDiscovery({ ...CTX, language: 'fr' }, CARD, new Set()).payload);
-    assert.equal(fr.outdoor_temperature?.name, 'Température extérieure');
-    assert.equal(fr.over_ventilation?.name, 'Surventilation');
-    assert.equal(fr.mode?.unique_id, 'ventilairsec2mqtt_0400AA01_mode');
+  it('sets fixed English entity IDs', () => {
+    const unit = cmps(unitDiscovery(CTX, CARD, new Set()).payload);
+    assert.equal(
+      unit.outdoor_temperature?.default_entity_id,
+      'sensor.ventilairsec_outdoor_temperature',
+    );
+    assert.equal(unit.mode?.default_entity_id, 'select.ventilairsec_mode');
+    assert.equal(unit.boost?.default_entity_id, 'switch.ventilairsec_boost');
+    const assistant = cmps(assistantDiscovery(CTX, '0400AA02').payload);
+    assert.equal(
+      assistant.temperature?.default_entity_id,
+      'sensor.ventilairsec_assistant_temperature',
+    );
+    const bridge = cmps(bridgeDiscovery(CTX).payload);
+    assert.equal(
+      bridge.stick_problem?.default_entity_id,
+      'binary_sensor.ventilairsec2mqtt_stick_problem',
+    );
   });
 });
 
@@ -332,6 +350,7 @@ describe('assistant and bridge discovery', () => {
       p: 'sensor',
       name: 'Battery',
       unique_id: 'ventilairsec2mqtt_0400AA02_battery',
+      default_entity_id: 'sensor.ventilairsec_assistant_battery',
       entity_category: 'diagnostic',
       device_class: 'battery',
       unit_of_measurement: '%',
@@ -389,14 +408,13 @@ describe('templates and names', () => {
     assert.equal(attributesTemplate(def('airflow')), undefined);
   });
 
-  it('has an English and a French name for every entity', () => {
+  it('has a name for every entity', () => {
     const keys = new Set(
       [...UNIT_ENTITIES, ...ASSISTANT_ENTITIES, ...BRIDGE_ENTITIES].map((d) => d.key),
     );
     assert.deepEqual([...keys].sort(), [...namedKeys()].sort());
     for (const key of keys) {
-      assert.notEqual(entityName(key, 'en'), '');
-      assert.notEqual(entityName(key, 'fr'), '');
+      assert.notEqual(entityName(key), '');
     }
   });
 

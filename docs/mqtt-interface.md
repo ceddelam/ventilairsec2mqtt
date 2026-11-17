@@ -15,7 +15,9 @@ through MQTT discovery. Radio fields refer to [protocol.md](protocol.md).
   (model, firmware, serial number) or to attributes.
 - Entities tied to an option (Hydro'R, SolarR, extra bypasses) exist only when the unit reports the
   option.
-- English keys; entity names in English or French (`language` option).
+- English only: keys, entity names and fixed entity IDs (`default_entity_id`:
+  `<platform>.ventilairsec_<key>` for the unit, `<platform>.ventilairsec_assistant_<key>` for the
+  Assistant, `<platform>.ventilairsec2mqtt_<key>` for the bridge).
 - Identifiers prefixed with `ventilairsec2mqtt` so they never collide with another integration.
 
 ## 2. Topics
@@ -196,6 +198,6 @@ JSON on `<prefix>/<vmi_id>/set` or raw value on `<prefix>/<vmi_id>/set/<key>`:
 - Options are read from `/data/options.json` in the app (path configurable for other uses).
 - Options: `serial_port`, `fallback_port`, `vmi_id`, `assistant_id`, `sender_id`,
   `force_base_id`, `sync_clock`, `accept_pairing`, `topic_prefix`, `discovery_prefix`,
-  `language`, `log_level`, `mqtt_host`, `mqtt_port`, `mqtt_user`, `mqtt_password`, `mqtt_tls`.
+  `log_level`, `mqtt_host`, `mqtt_port`, `mqtt_user`, `mqtt_password`, `mqtt_tls`.
   Surrounding spaces are ignored. External broker when `mqtt_host` is set, otherwise the
   Supervisor's (`mqtt:want`).

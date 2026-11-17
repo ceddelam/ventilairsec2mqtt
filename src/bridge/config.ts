@@ -13,11 +13,6 @@ export const DEFAULT_OPTIONS_PATH = '/data/options.json';
 /** Default state file inside the Home Assistant app. */
 export const DEFAULT_STATE_PATH = '/data/state.json';
 
-/** Entity name language. */
-export type Language = 'en' | 'fr';
-/** Accepted languages. */
-export const LANGUAGES: readonly Language[] = ['en', 'fr'];
-
 /** External MQTT broker settings (`mqtt_host` set). */
 export interface ExternalBroker {
   readonly host: string;
@@ -40,7 +35,6 @@ export interface Options {
   readonly acceptPairing: boolean;
   readonly topicPrefix: string;
   readonly discoveryPrefix: string;
-  readonly language: Language;
   readonly logLevel: LogLevel;
   /** `undefined`: use the Supervisor's broker (`mqtt_host` empty). */
   readonly mqtt: ExternalBroker | undefined;
@@ -74,7 +68,6 @@ const KNOWN_KEYS = new Set([
   'accept_pairing',
   'topic_prefix',
   'discovery_prefix',
-  'language',
   'log_level',
   'mqtt_host',
   'mqtt_port',
@@ -251,7 +244,6 @@ export function parseOptions(raw: unknown): ParsedOptions {
     acceptPairing: r.boolean('accept_pairing', true),
     topicPrefix: r.topicPath('topic_prefix', 'ventilairsec2mqtt'),
     discoveryPrefix: r.topicPath('discovery_prefix', 'homeassistant'),
-    language: r.choice('language', LANGUAGES, 'en'),
     logLevel,
     mqtt: host === undefined ? undefined : { host, port, username, password, tls },
   };

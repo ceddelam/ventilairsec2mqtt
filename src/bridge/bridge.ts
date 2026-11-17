@@ -81,7 +81,6 @@ export type BridgeSettings = Pick<
   | 'acceptPairing'
   | 'topicPrefix'
   | 'discoveryPrefix'
-  | 'language'
 >;
 
 /** Constructor options of {@link Bridge}. */
@@ -205,7 +204,6 @@ export class Bridge {
     this.#ctx = {
       topicPrefix: this.#settings.topicPrefix,
       discoveryPrefix: this.#settings.discoveryPrefix,
-      language: this.#settings.language,
       app: options.app,
       vmiId: this.#settings.vmiId,
     };
