@@ -17,11 +17,10 @@ RUN npm run build \
     && npm prune --omit=dev --ignore-scripts --no-audit --no-fund \
     && find dist node_modules \( -name '*.map' -o -name '*.d.ts' -o -name '*.d.mts' \) -delete \
     && find node_modules -type d -empty -delete \
-    && cd node_modules/@serialport/bindings-cpp \
-    && find prebuilds -mindepth 1 -maxdepth 1 ! -name linux-x64 ! -name linux-arm64 \
-        -exec rm -r {} + \
-    && find prebuilds -name '*.node' ! -name '*musl*' -delete \
-    && rm -rf src build
+    && find node_modules/@serialport/bindings-cpp/prebuilds -mindepth 1 -maxdepth 1 \
+        ! -name linux-x64 ! -name linux-arm64 -exec rm -r {} + \
+    && find node_modules/@serialport/bindings-cpp/prebuilds -name '*.node' ! -name '*musl*' -delete \
+    && rm -rf node_modules/@serialport/bindings-cpp/src node_modules/@serialport/bindings-cpp/build
 
 # --- App image ---------------------------------------------------------------------------------
 FROM ghcr.io/home-assistant/base:3.24-2026.11.0

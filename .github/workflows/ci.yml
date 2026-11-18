@@ -1,0 +1,59 @@
+# Lint, types, unit tests on Node 24 and Node 20, MQTT integration test, Dockerfile and shell lint.
+# One job on purpose: billed minutes are rounded up per job.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths-ignore: ['**.md', 'docs/**', 'assets/**', '.github/dependabot.yml']
+  pull_request:
+    paths-ignore: ['**.md', 'docs/**', 'assets/**', '.github/dependabot.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lint, types and tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: Typecheck, lint, unit tests (Node 24)
+        run: npm run check
+
+      - run: npm run build
+
+      - name: Integration test against Mosquitto
+        run: npm run test:integration
+
+      - name: Compile the tests for Node 20
+        run: npm run test:compiled -- --build-only
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 20
+
+      - name: Unit tests (Node 20)
+        run: node scripts/test-compiled.mjs --no-build
+
+      - name: Lint the Dockerfile
+        run: >-
+          docker run --rm -i -v "$PWD/.hadolint.yaml:/.config/hadolint.yaml:ro"
+          hadolint/hadolint:v2.15.1 < ventilairsec2mqtt/Dockerfile
+
+      - name: Lint the shell scripts
+        run: shellcheck packaging/standalone/install.sh test/packaging/standalone-install.sh

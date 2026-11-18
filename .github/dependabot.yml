@@ -1,0 +1,29 @@
+# Grouped weekly / monthly updates to keep CI minutes low.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      production:
+        dependency-type: production
+      development:
+        dependency-type: development
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns: ['*']
+
+  - package-ecosystem: docker
+    directory: /ventilairsec2mqtt
+    schedule:
+      interval: monthly
+    groups:
+      images:
+        patterns: ['*']

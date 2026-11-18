@@ -1,0 +1,4 @@
+# DL3018 (pin apk package versions): Alpine replaces a package revision when it ships a security
+# fix, so a pinned `nodejs=<version>-r<n>` would break the build; the base image tag is pinned.
+ignored:
+  - DL3018

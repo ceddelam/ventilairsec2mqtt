@@ -60,10 +60,16 @@ Standalone service:
 
 ## Phase 4 — GitHub CI/CD
 
-- [ ] Pull requests: lint, typecheck, tests (Node 20 and current LTS), hadolint.
-- [ ] Releases: pinned `home-assistant/builder` actions, amd64/aarch64 matrix, cosign, public ghcr
-  images; standalone release archive attached to the GitHub release.
-- [ ] Renovate or Dependabot.
+- [x] CI on every push and pull request: typecheck, lint, unit tests on Node 24 and Node 20,
+  integration test against Mosquitto, hadolint, shellcheck (one job to save minutes).
+- [x] Packaging workflow when packaging inputs change: app image end-to-end test, standalone
+  install test, release archive.
+- [x] Release workflow on a `v*.*.*` tag: version check, pinned `home-assistant/builder` actions
+  (amd64 and aarch64 native runners, multi-arch manifest on ghcr.io), GitHub release with the
+  standalone archive. Cosign signing off while the repository is private.
+- [x] Dependabot: grouped weekly npm updates, monthly actions and base image updates.
+- [ ] First green runs on GitHub, then a first release (`v0.1.0`).
+- [ ] When the repository goes public: make the ghcr.io package public, turn Cosign on.
 
 ## Phase 5 — Validation on a real installation
 

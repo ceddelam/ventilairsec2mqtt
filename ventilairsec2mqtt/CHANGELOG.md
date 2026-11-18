@@ -7,6 +7,8 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follo
 
 ### Added
 
+- GitHub Actions: CI (Node 24 and 20, integration, lint), packaging tests, release workflow
+  (app images for amd64 and aarch64, standalone archive), Dependabot.
 - Ventilairsec radio protocol spec (MSC D1-079), sourced facts: `docs/protocol.md`.
 - MQTT / Home Assistant interface: `docs/mqtt-interface.md`.
 - Provenance and credits: `docs/sources.md`; plan: `docs/plan.md`.

@@ -1,0 +1,60 @@
+# App image end-to-end test and standalone install test. Only runs when packaging inputs change,
+# to save minutes.
+name: Packaging
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'ventilairsec2mqtt/**'
+      - 'packaging/**'
+      - 'scripts/**'
+      - 'src/**'
+      - 'test/packaging/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.dockerignore'
+      - '.github/workflows/packaging.yml'
+  pull_request:
+    paths:
+      - 'ventilairsec2mqtt/**'
+      - 'packaging/**'
+      - 'scripts/**'
+      - 'src/**'
+      - 'test/packaging/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.dockerignore'
+      - '.github/workflows/packaging.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  packaging:
+    name: App image and standalone service
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 24
+          cache: npm
+
+      - run: npm ci --no-audit --no-fund
+
+      - name: App image end-to-end test (amd64)
+        run: npm run test:app
+
+      - name: Standalone install test (Debian 13)
+        run: npm run test:standalone
+
+      - name: Release archive
+        run: npm run pack
