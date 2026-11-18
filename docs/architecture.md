@@ -7,8 +7,17 @@ topics and entities to [mqtt-interface.md](mqtt-interface.md).
 
 ## Deployment
 
-Who talks to whom, over what. The stick is either plugged into the Home Assistant host (serial)
-or into a small computer near the unit that shares it over the network with ser2net (TCP).
+The same program runs in two ways:
+
+- **Home Assistant app**: the simplest for users. The stick is plugged into the Home Assistant
+  host, or into a computer near the unit that shares it over the network with ser2net.
+- **Standalone service**: the program runs on the computer the stick is plugged into (for example
+  a Raspberry Pi near the unit, under systemd). Only MQTT crosses the network; Home Assistant and
+  any other client just use the broker.
+
+In both cases the MQTT interface is the same ([mqtt-interface.md](mqtt-interface.md)).
+
+### Home Assistant app
 
 ```mermaid
 flowchart LR
@@ -37,13 +46,44 @@ flowchart LR
   core <-- "MQTT<br/>discovery, states, orders" --> broker
 ```
 
+### Standalone service
+
+```mermaid
+flowchart LR
+  subgraph radio["EnOcean radio 868 MHz"]
+    unit["Ventilation unit"]
+    assistant["Assistant (wall sensor)"]
+  end
+  stick["USB stick (TCM310)"]
+  subgraph pi["Computer near the unit"]
+    service["ventilairsec2mqtt<br/>(systemd service)"]
+  end
+  broker["MQTT broker"]
+  subgraph clients["MQTT clients"]
+    core["Home Assistant<br/>MQTT integration"]
+    other["Scripts, dashboards…"]
+  end
+
+  assistant <-- radio --> unit
+  unit <-- radio --> stick
+  assistant -- radio --> stick
+  stick -- "USB serial<br/>ESP3" --> service
+  service -- "MQTT, TLS optional<br/>states, discovery" --> broker
+  broker -- "MQTT<br/>orders" --> service
+  core <-- "MQTT" --> broker
+  other <-- "MQTT" --> broker
+```
+
 | Link | Protocol | Tool |
 |---|---|---|
 | Unit, Assistant, stick | EnOcean radio 868 MHz, ERP1 telegrams, MSC D1-079 profile | unit firmware, TCM310 module |
 | Stick → computer | USB serial 57,600 baud 8N1, ESP3 packets | USB serial driver |
-| Remote stick → app | TCP, the same ESP3 bytes | ser2net |
-| App ⇄ broker | MQTT (optionally TLS) | mqtt.js |
-| Home Assistant ⇄ broker | MQTT | Home Assistant MQTT integration |
+| Remote stick → app (app mode) | TCP, the same ESP3 bytes | ser2net |
+| Program ⇄ broker | MQTT (optionally TLS) | mqtt.js |
+| Home Assistant and other clients ⇄ broker | MQTT | Home Assistant MQTT integration, any MQTT client |
+
+The standalone service needs Node.js 20 or later (the version packaged for ARMv6 boards such as
+the Raspberry Pi Zero) and an explicit broker (`mqtt_host`), since there is no Supervisor.
 
 ## Layers
 

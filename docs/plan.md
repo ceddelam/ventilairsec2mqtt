@@ -9,6 +9,8 @@ ventilation units to MQTT over EnOcean, published on GitHub with images on ghcr.
 - [x] Licence: MIT, rewrite from facts (see [sources.md](sources.md)).
 - [x] Language: strict TypeScript on Node LTS; dependencies `mqtt`, `serialport`.
 - [x] Docs, code and Home Assistant texts in English only (no second language).
+- [x] Two delivery modes, same program and MQTT interface: Home Assistant app, and standalone
+  service on the computer the stick is plugged into (see [architecture.md](architecture.md)).
 - [x] New, cleaner MQTT interface and entities: [mqtt-interface.md](mqtt-interface.md).
 
 ## Phase 0 — Groundwork
@@ -35,24 +37,33 @@ ventilation units to MQTT over EnOcean, published on GitHub with images on ghcr.
 - [x] Device discovery, availability, republish on `homeassistant/status`.
 - [x] Integration test against a Mosquitto container.
 
-## Phase 3 — Home Assistant app packaging
+## Phase 3 — Packaging
+
+Home Assistant app:
 
 - [ ] `config.yaml` (amd64/aarch64, `mqtt:want`, no port), Dockerfile on
   `ghcr.io/home-assistant/base` without `build.yaml`, `apparmor.txt`, English translations, README,
   DOCS, CHANGELOG, icon and logo.
 - [ ] Security rating 8; starts as a local app.
 
+Standalone service:
+
+- [ ] Runs on Node.js 20 or later (ARMv6 boards ship Node 20); tests also run on Node 20.
+- [ ] Release archive (built code + production dependencies), systemd unit, install and update
+  script, options and state files in standard locations, logs to the journal.
+- [ ] Documentation: install on a Raspberry Pi, broker settings, update, uninstall.
+
 ## Phase 4 — GitHub CI/CD
 
-- [ ] Pull requests: lint, typecheck, tests, hadolint.
+- [ ] Pull requests: lint, typecheck, tests (Node 20 and current LTS), hadolint.
 - [ ] Releases: pinned `home-assistant/builder` actions, amd64/aarch64 matrix, cosign, public ghcr
-  images.
+  images; standalone release archive attached to the GitHub release.
 - [ ] Renovate or Dependabot.
 
 ## Phase 5 — Validation on a real installation
 
-- [ ] Run on a real installation, check entities, orders and automations, 1 to 2 weeks
-  without discrepancy.
+- [ ] Run each mode on a real installation (app and standalone service), check entities, orders
+  and automations, 1 to 2 weeks without discrepancy.
 
 ## Phase 6 — Release
 
