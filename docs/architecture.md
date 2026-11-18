@@ -5,6 +5,46 @@ has no MQTT and no Home Assistant code. Phase 2 is the MQTT bridge (`src/bridge/
 `src/main.ts`), built on the phase 1 API. Radio facts refer to [protocol.md](protocol.md), MQTT
 topics and entities to [mqtt-interface.md](mqtt-interface.md).
 
+## Deployment
+
+Who talks to whom, over what. The stick is either plugged into the Home Assistant host (serial)
+or into a small computer near the unit that shares it over the network with ser2net (TCP).
+
+```mermaid
+flowchart LR
+  subgraph radio["EnOcean radio 868 MHz"]
+    unit["Ventilation unit"]
+    assistant["Assistant (wall sensor)"]
+  end
+  stick["USB stick (TCM310)"]
+  subgraph remote["Near the unit (optional)"]
+    ser2net["ser2net"]
+  end
+  subgraph ha["Home Assistant"]
+    app["ventilairsec2mqtt app"]
+    core["Home Assistant Core<br/>MQTT integration"]
+  end
+  broker["MQTT broker<br/>(Mosquitto app or external)"]
+
+  assistant <-- radio --> unit
+  unit <-- radio --> stick
+  assistant -- radio --> stick
+  stick -- "USB serial<br/>ESP3" --> ser2net
+  stick -. "or USB serial<br/>on the HA host" .-> app
+  ser2net -- "TCP<br/>raw ESP3" --> app
+  app -- "MQTT, TLS optional<br/>states, discovery" --> broker
+  broker -- "MQTT<br/>orders" --> app
+  core <-- "MQTT<br/>discovery, states, orders" --> broker
+```
+
+| Link | Protocol | Tool |
+|---|---|---|
+| Unit, Assistant, stick | EnOcean radio 868 MHz, ERP1 telegrams, MSC D1-079 profile | unit firmware, TCM310 module |
+| Stick → computer | USB serial 57,600 baud 8N1, ESP3 packets | USB serial driver |
+| Remote stick → app | TCP, the same ESP3 bytes | ser2net |
+| App ⇄ broker | MQTT (optionally TLS) | mqtt.js |
+| Home Assistant ⇄ broker | MQTT | Home Assistant MQTT integration |
+
 ## Layers
 
 ```text
