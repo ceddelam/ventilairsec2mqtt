@@ -6,7 +6,7 @@
 # used (see .dockerignore).
 
 # --- Build stage: compile the TypeScript sources, keep the production dependencies -------------
-FROM node:24-alpine AS build
+FROM node:26-alpine AS build
 WORKDIR /build
 COPY package.json package-lock.json ./
 # serialport's install script only looks for a prebuilt binding: nothing to run or compile.
