@@ -71,16 +71,10 @@ export interface MqttPublisher {
   publish(topic: string, payload: string, options: { readonly retain: boolean }): Promise<void>;
 }
 
-/** Options used by the bridge. */
-export type BridgeSettings = Pick<
+/** Options used by the bridge (the unit ID is required: scan mode uses `ScanBridge`). */
+export type BridgeSettings = { readonly vmiId: EnOceanId } & Pick<
   Options,
-  | 'vmiId'
-  | 'assistantId'
-  | 'senderId'
-  | 'syncClock'
-  | 'acceptPairing'
-  | 'topicPrefix'
-  | 'discoveryPrefix'
+  'assistantId' | 'senderId' | 'syncClock' | 'acceptPairing' | 'topicPrefix' | 'discoveryPrefix'
 >;
 
 /** Constructor options of {@link Bridge}. */

@@ -5,6 +5,10 @@ package-lock.json
 fixtures/
 docs/
 CHANGELOG.md
+ventilairsec2mqtt/*.md
 README.md
 LICENSE
 .test-tmp/
+.test-build/
+.local-app/
+release/

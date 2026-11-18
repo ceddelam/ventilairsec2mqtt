@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import { rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { after, describe, it } from 'node:test';
-import { parseArguments } from '../../src/bridge/cli.ts';
+import { parseArguments, parseCommandLine, USAGE } from '../../src/bridge/cli.ts';
 import { ConfigError, loadOptions, parseOptions } from '../../src/bridge/config.ts';
 import {
   BrokerConfigError,
@@ -103,8 +103,16 @@ describe('parseOptions', () => {
     ]);
   });
 
-  it('requires serial_port and vmi_id', () => {
-    assert.deepEqual(problems({}), ['serial_port: required', 'vmi_id: required']);
+  it('requires serial_port', () => {
+    assert.deepEqual(problems({}), ['serial_port: required']);
+  });
+
+  it('accepts an empty vmi_id (scan mode)', () => {
+    assert.equal(parseOptions({ serial_port: '/dev/ttyUSB0' }).options.vmiId, undefined);
+    assert.equal(
+      parseOptions({ serial_port: '/dev/ttyUSB0', vmi_id: ' ' }).options.vmiId,
+      undefined,
+    );
   });
 
   it('rejects a non-object', () => {
@@ -302,5 +310,31 @@ describe('parseArguments', () => {
   it('rejects unknown arguments', () => {
     assert.throws(() => parseArguments(['--verbose'], {}), /unknown argument --verbose/);
     assert.throws(() => parseArguments(['a.json', 'b.json'], {}), /unexpected argument b\.json/);
+  });
+});
+
+describe('parseCommandLine', () => {
+  it('recognises --help and --version anywhere', () => {
+    assert.deepEqual(parseCommandLine(['--help'], {}), { action: 'help' });
+    assert.deepEqual(parseCommandLine(['opts.json', '-h'], {}), { action: 'help' });
+    assert.deepEqual(parseCommandLine(['--version'], {}), { action: 'version' });
+    assert.deepEqual(parseCommandLine(['--bogus', '--version'], {}), { action: 'version' });
+    assert.throws(() => parseArguments(['--version'], {}), /--version takes no paths/);
+  });
+
+  it('reads --no-timestamps', () => {
+    assert.deepEqual(parseCommandLine(['/etc/x.json', '--no-timestamps'], {}), {
+      action: 'run',
+      optionsPath: '/etc/x.json',
+      statePath: '/data/state.json',
+      noTimestamps: true,
+    });
+    assert.equal(parseCommandLine([], {}).action, 'run');
+  });
+
+  it('documents every argument in the usage text', () => {
+    for (const word of ['--state', '--no-timestamps', '--version', '--help', 'scan mode']) {
+      assert.ok(USAGE.includes(word), word);
+    }
   });
 });

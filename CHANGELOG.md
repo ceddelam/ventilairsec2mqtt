@@ -26,3 +26,24 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follo
   orders with validation and optimistic state, clock sync, automatic pairing answer, Assistant ID
   learning; entry point `ventilairsec2mqtt [options.json]`.
 - End-to-end test against a Mosquitto container: `npm run test:integration`.
+- Home Assistant app (version 0.1.0): `repository.yaml`, app folder `ventilairsec2mqtt/`
+  (amd64 / aarch64, Supervisor MQTT service, serial devices, English translations, README, DOCS,
+  icon and logo drawn from `assets/*.svg`), multi-stage Dockerfile on the Home Assistant base
+  image (program run as the s6-overlay main program), `npm run app:local` for a local app.
+- Scan mode: with an empty `vmi_id`, the program publishes only the bridge device, transmits
+  nothing and logs each Ventilairsec device heard (unit, Assistant, pairing requests, paired
+  sensor list) with its destination and signal level, to find the IDs.
+- Command line: `--version`, `--help`, `--no-timestamps`; under the systemd journal, log lines
+  have no timestamp and carry the journal priority.
+- Standalone service: release archive (`npm run pack`), systemd unit with hardening,
+  `install.sh` (install, update, rollback, uninstall), guide `docs/install-standalone.md`.
+- Tests on Node 20 (`npm run test:node20`, compiled tests in a `node:20-alpine` container), end
+  to end test of the app image (`npm run test:app`), install tests in Debian 13
+  (`npm run test:standalone`), checks of the app files against the program options.
+- AppArmor profile draft for the app: `packaging/apparmor.txt` (not enabled yet).
+
+### Changed
+
+- `vmi_id` is optional (empty: scan mode).
+- Errors without a message (e.g. a broker refused on both IPv6 and IPv4) are logged with their
+  inner errors.

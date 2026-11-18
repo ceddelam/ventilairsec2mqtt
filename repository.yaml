@@ -1,0 +1,4 @@
+# Home Assistant app repository: add https://github.com/ceddelam/ventilairsec2mqtt in
+# Settings > Apps > App store > Repositories.
+name: ventilairsec2mqtt
+url: https://github.com/ceddelam/ventilairsec2mqtt

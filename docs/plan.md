@@ -41,17 +41,22 @@ ventilation units to MQTT over EnOcean, published on GitHub with images on ghcr.
 
 Home Assistant app:
 
-- [ ] `config.yaml` (amd64/aarch64, `mqtt:want`, no port), Dockerfile on
-  `ghcr.io/home-assistant/base` without `build.yaml`, `apparmor.txt`, English translations, README,
-  DOCS, CHANGELOG, icon and logo.
-- [ ] Security rating 8; starts as a local app.
+- [x] `config.yaml` (amd64/aarch64, `mqtt:want`, no port), Dockerfile on
+  `ghcr.io/home-assistant/base` without `build.yaml`, English translations, README, DOCS,
+  CHANGELOG, icon and logo.
+- [x] Local image build and end-to-end test (broker, emulated stick, orders, clean stop).
+- [x] Scan mode to find the IDs when `vmi_id` is empty.
+- [ ] Install as a local app on a real Home Assistant (Supervisor schema, serial device mapping).
+- [ ] AppArmor profile (draft in `packaging/apparmor.txt`): validate in complain mode, then move it
+  into the app folder (security rating 7 → 8).
 
 Standalone service:
 
-- [ ] Runs on Node.js 20 or later (ARMv6 boards ship Node 20); tests also run on Node 20.
-- [ ] Release archive (built code + production dependencies), systemd unit, install and update
-  script, options and state files in standard locations, logs to the journal.
-- [ ] Documentation: install on a Raspberry Pi, broker settings, update, uninstall.
+- [x] Runs on Node.js 20 or later; the test suite also runs on Node 20.
+- [x] Release archive (built code + production dependencies), systemd unit, install / update /
+  rollback / uninstall script, tested in a Debian 13 container.
+- [x] Documentation: [install-standalone.md](install-standalone.md).
+- [ ] Run under systemd on a real Raspberry Pi (sandbox rules, ARMv6 serial binding).
 
 ## Phase 4 — GitHub CI/CD
 

@@ -1,0 +1,8 @@
+# Docker build context of the Home Assistant app (ventilairsec2mqtt/Dockerfile): only what the
+# build stage copies. Also copied into the folder made by `npm run app:local`.
+*
+!package.json
+!package-lock.json
+!tsconfig.json
+!tsconfig.build.json
+!src/

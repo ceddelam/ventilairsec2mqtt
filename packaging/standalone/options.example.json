@@ -1,0 +1,14 @@
+{
+  "serial_port": "/dev/ttyUSB0",
+  "vmi_id": "",
+  "accept_pairing": true,
+  "sync_clock": true,
+  "mqtt_host": "localhost",
+  "mqtt_port": 1883,
+  "mqtt_user": "",
+  "mqtt_password": "",
+  "mqtt_tls": false,
+  "topic_prefix": "ventilairsec2mqtt",
+  "discovery_prefix": "homeassistant",
+  "log_level": "info"
+}

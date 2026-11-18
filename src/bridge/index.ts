@@ -14,7 +14,7 @@ export {
   type BridgeSettings,
   type MqttPublisher,
 } from './bridge.ts';
-export { parseArguments } from './cli.ts';
+export { parseArguments, parseCommandLine, USAGE, type CommandLine } from './cli.ts';
 export {
   InvalidOrderError,
   ORDER_KEYS,
@@ -30,6 +30,7 @@ export {
   DEFAULT_OPTIONS_PATH,
   DEFAULT_STATE_PATH,
   loadOptions,
+  OPTION_KEYS,
   parseOptions,
   type ExternalBroker,
   type Options,
@@ -58,7 +59,25 @@ export {
   type Platform,
 } from './entities.ts';
 export { entityName, type EntityKey } from './names.ts';
-export { createConsoleLogger, LOG_LEVELS, type LogLevel, type LogSink } from './log.ts';
+export {
+  createConsoleLogger,
+  formatLogLine,
+  isJournalStream,
+  LOG_LEVELS,
+  type LogFormat,
+  type LogLevel,
+  type LogSink,
+} from './log.ts';
+export {
+  DeviceScanner,
+  SCAN_ID,
+  ScanBridge,
+  type OwnIds,
+  type ScanBridgeOptions,
+  type ScanFinding,
+  type ScanGuess,
+  type ScanSettings,
+} from './scan.ts';
 export {
   BOOST_DURATION,
   DEFAULT_STATE,

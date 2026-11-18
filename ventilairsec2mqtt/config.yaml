@@ -1,0 +1,44 @@
+# Home Assistant app configuration. Options and schema match src/bridge/config.ts
+# (docs/mqtt-interface.md § 8); test/packaging.test.ts checks they stay in sync.
+name: ventilairsec2mqtt
+version: '0.1.0'
+slug: ventilairsec2mqtt
+description: Ventilairsec ventilation units (EnOcean radio) to MQTT and Home Assistant
+url: https://github.com/ceddelam/ventilairsec2mqtt
+arch:
+  - aarch64
+  - amd64
+image: ghcr.io/ceddelam/ventilairsec2mqtt
+init: false
+startup: application
+boot: auto
+backup: hot
+services:
+  - mqtt:want
+# Serial devices of the host (EnOcean USB stick), including /dev/serial/by-id/... links.
+uart: true
+options:
+  serial_port: /dev/ttyUSB0
+  vmi_id: ''
+  accept_pairing: true
+  sync_clock: true
+  topic_prefix: ventilairsec2mqtt
+  discovery_prefix: homeassistant
+  log_level: info
+schema:
+  serial_port: str
+  fallback_port: str?
+  vmi_id: 'match(^([0-9A-Fa-f]{8})?$)?'
+  assistant_id: 'match(^[0-9A-Fa-f]{8}$)?'
+  sender_id: 'match(^[0-9A-Fa-f]{8}$)?'
+  force_base_id: 'match(^[Ff][Ff][0-9A-Fa-f]{6}$)?'
+  accept_pairing: bool
+  sync_clock: bool
+  topic_prefix: 'match(^[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*$)'
+  discovery_prefix: 'match(^[A-Za-z0-9_-]+(/[A-Za-z0-9_-]+)*$)'
+  log_level: list(debug|info|warning|error)
+  mqtt_host: str?
+  mqtt_port: port?
+  mqtt_user: str?
+  mqtt_password: password?
+  mqtt_tls: bool?

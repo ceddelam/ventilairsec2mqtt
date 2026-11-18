@@ -1,0 +1,68 @@
+configuration:
+  serial_port:
+    name: Stick port
+    description: >-
+      EnOcean USB stick: a serial device (preferably /dev/serial/by-id/...) or a stick shared
+      over the network with ser2net, as socket://host:port.
+  fallback_port:
+    name: Fallback port
+    description: >-
+      Optional second port, used after 3 failures of the stick port; the app goes back to the
+      stick port as soon as it answers again.
+  vmi_id:
+    name: Ventilation unit ID
+    description: >-
+      EnOcean ID of the ventilation unit (8 hexadecimal digits). Leave empty to start in scan
+      mode: the app then only logs the Ventilairsec devices it hears, to help you find the ID.
+  assistant_id:
+    name: Assistant ID
+    description: >-
+      EnOcean ID of the Assistant wall sensor. Optional: learnt from the unit's paired sensors or
+      from its frames when empty.
+  sender_id:
+    name: Sender ID
+    description: >-
+      ID the app transmits with. Empty: the stick's Base ID. Must lie in Base ID + 0 to 127.
+  force_base_id:
+    name: Force Base ID
+    description: >-
+      Rewrites the stick's Base ID (FF800000 to FFFFFF80, multiple of 80). The stick allows only
+      about 10 rewrites in its lifetime: leave empty unless you know you need it.
+  accept_pairing:
+    name: Accept pairing
+    description: >-
+      Answer the unit's pairing requests (sent for about 6 hours after it is powered on). Turn
+      off once the unit is paired.
+  sync_clock:
+    name: Sync the clock
+    description: >-
+      Set the unit's clock after each stick connection and every hour (time zone of Home
+      Assistant).
+  topic_prefix:
+    name: MQTT topic prefix
+    description: Prefix of the app's MQTT topics.
+  discovery_prefix:
+    name: Discovery prefix
+    description: >-
+      Home Assistant MQTT discovery prefix, as set in the MQTT integration (homeassistant by
+      default).
+  log_level:
+    name: Log level
+    description: debug also logs every radio frame received and sent.
+  mqtt_host:
+    name: MQTT broker host
+    description: >-
+      Leave empty to use the broker of the Home Assistant MQTT integration (Mosquitto app).
+      Set it to use another broker.
+  mqtt_port:
+    name: MQTT broker port
+    description: Default 1883, or 8883 with TLS.
+  mqtt_user:
+    name: MQTT user
+    description: User name for the broker set in MQTT broker host.
+  mqtt_password:
+    name: MQTT password
+    description: Password for the broker set in MQTT broker host.
+  mqtt_tls:
+    name: MQTT over TLS
+    description: Connect to the broker set in MQTT broker host with TLS.

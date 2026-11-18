@@ -1,0 +1,78 @@
+# ventilairsec2mqtt as a standalone systemd service, installed by install.sh to
+# /etc/systemd/system/ventilairsec2mqtt.service. Local changes: `systemctl edit ventilairsec2mqtt`
+# (a drop-in survives updates). Documentation: docs/install-standalone.md.
+
+[Unit]
+Description=ventilairsec2mqtt (Ventilairsec ventilation unit to MQTT bridge)
+Documentation=https://github.com/ceddelam/ventilairsec2mqtt/blob/main/docs/install-standalone.md
+Wants=network-online.target
+After=network-online.target
+# A configuration error makes the program exit with 1: stop retrying after 5 quick failures.
+StartLimitIntervalSec=10min
+StartLimitBurst=5
+
+[Service]
+Type=exec
+User=ventilairsec2mqtt
+Group=ventilairsec2mqtt
+# Serial devices (/dev/ttyUSB*, /dev/ttyACM*) belong to the dialout group.
+SupplementaryGroups=dialout
+ExecStart=/usr/bin/node /opt/ventilairsec2mqtt/current/dist/main.js /etc/ventilairsec2mqtt/options.json
+Environment=VENTILAIRSEC2MQTT_STATE=/var/lib/ventilairsec2mqtt/state.json
+Environment=NODE_ENV=production
+# Keeps the JavaScript heap small on a 512 MB board (the bridge needs a few tens of MB).
+Environment=NODE_OPTIONS=--max-old-space-size=96
+# /var/lib/ventilairsec2mqtt, owned by the service user, writable despite ProtectSystem=strict.
+StateDirectory=ventilairsec2mqtt
+StateDirectoryMode=0750
+Restart=on-failure
+RestartSec=10s
+# SIGTERM: the program publishes "offline", closes the stick and the broker connection.
+TimeoutStopSec=20s
+# Logs go to the journal: no timestamp prefix there (detected through JOURNAL_STREAM), and the
+# journal priority follows the log level.
+SyslogIdentifier=ventilairsec2mqtt
+MemoryHigh=160M
+MemoryMax=256M
+TasksMax=64
+UMask=0027
+
+# Hardening (systemd.exec(5)); `systemd-analyze security ventilairsec2mqtt` shows the result.
+NoNewPrivileges=yes
+CapabilityBoundingSet=
+AmbientCapabilities=
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+# The stick is a real device: PrivateDevices=yes would hide it. Instead, only the standard
+# pseudo devices plus USB serial adapters (FTDI-based USB 300: ttyUSB; CDC ACM: ttyACM) are
+# allowed. /dev/serial/by-id/... links resolve to these devices. A stick shared with ser2net
+# (socket://) needs no device at all.
+PrivateDevices=no
+DevicePolicy=closed
+DeviceAllow=char-ttyUSB rw
+DeviceAllow=char-ttyACM rw
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectKernelLogs=yes
+ProtectControlGroups=yes
+ProtectClock=yes
+ProtectHostname=yes
+ProtectProc=invisible
+# AF_NETLINK: glibc's getaddrinfo() asks the kernel which address families are configured
+# (AI_ADDRCONFIG, used by Node's DNS lookups) through a netlink socket. serialport does not use
+# netlink (the port list, which reads udev, is not used).
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK
+RestrictNamespaces=yes
+RestrictRealtime=yes
+RestrictSUIDSGID=yes
+LockPersonality=yes
+RemoveIPC=yes
+# MemoryDenyWriteExecute=yes is not set: the V8 JIT compiler needs writable executable memory.
+SystemCallArchitectures=native
+SystemCallFilter=@system-service
+SystemCallFilter=~@privileged
+SystemCallErrorNumber=EPERM
+
+[Install]
+WantedBy=multi-user.target

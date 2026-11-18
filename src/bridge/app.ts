@@ -13,6 +13,7 @@ import type { Options } from './config.ts';
 import { topics, type AppInfo } from './discovery.ts';
 import { errorMessage } from './log.ts';
 import { StateStore } from './state-store.ts';
+import { ScanBridge, SCAN_ID } from './scan.ts';
 import { resolveBroker, type BrokerSettings, type ResolveBrokerOptions } from './supervisor.ts';
 
 /** Reads the app name, version and support URL (`homepage`) from package.json. */
@@ -45,7 +46,8 @@ export interface StartAppOptions {
 
 /** A running app. */
 export interface RunningApp {
-  readonly bridge: Bridge;
+  /** `Bridge`, or `ScanBridge` in scan mode (empty `vmi_id`). */
+  readonly bridge: Bridge | ScanBridge;
   readonly link: StickConnection;
   readonly mqtt: MqttClient;
   readonly broker: BrokerSettings;
@@ -57,7 +59,11 @@ export interface RunningApp {
 export async function startApp(start: StartAppOptions): Promise<RunningApp> {
   const { options, logger } = start;
   const app = start.app ?? readAppInfo();
-  logger.info(`${app.name} ${app.version} starting (unit ${options.vmiId})`);
+  const vmiId = options.vmiId;
+  logger.info(
+    `${app.name} ${app.version} starting ` +
+      (vmiId === undefined ? '(scan mode: vmi_id is empty)' : `(unit ${vmiId})`),
+  );
 
   const store = new StateStore(start.stateFile, logger);
   await store.load();
@@ -76,12 +82,12 @@ export async function startApp(start: StartAppOptions): Promise<RunningApp> {
     ...(start.timers === undefined ? {} : { timers: start.timers }),
   });
 
-  const t = topics(options, options.vmiId);
+  const t = topics(options, vmiId ?? SCAN_ID);
   const clientOptions: IClientOptions = {
     host: broker.host,
     port: broker.port,
     protocol: broker.tls ? 'mqtts' : 'mqtt',
-    clientId: `ventilairsec2mqtt_${options.vmiId}_${randomBytes(3).toString('hex')}`,
+    clientId: `ventilairsec2mqtt_${vmiId ?? SCAN_ID}_${randomBytes(3).toString('hex')}`,
     reconnectPeriod: start.mqttReconnectPeriodMs ?? 5000,
     connectTimeout: 30_000,
     will: { topic: t.bridgeAvailability, payload: Buffer.from('offline'), retain: true, qos: 1 },
@@ -98,15 +104,19 @@ export async function startApp(start: StartAppOptions): Promise<RunningApp> {
     },
   };
 
-  const bridge = new Bridge({
-    settings: options,
-    app,
-    link,
-    mqtt: publisher,
-    store,
-    logger,
-    ...(start.timers === undefined ? {} : { timers: start.timers }),
-  });
+  const timers = start.timers === undefined ? {} : { timers: start.timers };
+  const bridge =
+    vmiId === undefined
+      ? new ScanBridge({ settings: options, app, link, mqtt: publisher, logger, ...timers })
+      : new Bridge({
+          settings: { ...options, vmiId },
+          app,
+          link,
+          mqtt: publisher,
+          store,
+          logger,
+          ...timers,
+        });
   bridge.start();
 
   client.on('connect', () => {
@@ -119,7 +129,7 @@ export async function startApp(start: StartAppOptions): Promise<RunningApp> {
     bridge.handleMessage(topic, payload.toString('utf8'));
   });
   client.on('error', (error) => {
-    logger.error(`MQTT: ${error.message}`);
+    logger.error(`MQTT: ${errorMessage(error)}`);
   });
   client.on('offline', () => {
     logger.warn('MQTT broker unreachable, reconnecting');

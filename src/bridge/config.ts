@@ -27,7 +27,8 @@ export interface Options {
   /** Primary stick URL: `socket://host:port` or a serial device path. */
   readonly serialPort: string;
   readonly fallbackPort: string | undefined;
-  readonly vmiId: EnOceanId;
+  /** `undefined`: scan mode (no unit yet; the program only logs the devices it hears). */
+  readonly vmiId: EnOceanId | undefined;
   readonly assistantId: EnOceanId | undefined;
   readonly senderId: EnOceanId | undefined;
   readonly forceBaseId: EnOceanId | undefined;
@@ -57,7 +58,8 @@ export interface ParsedOptions {
   readonly warnings: readonly string[];
 }
 
-const KNOWN_KEYS = new Set([
+/** Every option key (mqtt-interface.md § 8). */
+export const OPTION_KEYS: readonly string[] = [
   'serial_port',
   'fallback_port',
   'vmi_id',
@@ -74,7 +76,8 @@ const KNOWN_KEYS = new Set([
   'mqtt_user',
   'mqtt_password',
   'mqtt_tls',
-]);
+];
+const KNOWN_KEYS = new Set(OPTION_KEYS);
 
 /** One or more topic levels made of letters, digits, `_` and `-`. */
 const TOPIC_PATH = /^[A-Za-z0-9_-]+(\/[A-Za-z0-9_-]+)*$/;
@@ -201,10 +204,8 @@ export function parseOptions(raw: unknown): ParsedOptions {
     }
   }
 
+  // Empty vmi_id = scan mode (the program logs the devices it hears to help find the IDs).
   const vmiId = r.id('vmi_id');
-  if (vmiId === undefined && r.problems.every((problem) => !problem.startsWith('vmi_id'))) {
-    r.problems.push('vmi_id: required');
-  }
   const assistantId = r.id('assistant_id');
   const senderId = r.id('sender_id');
   const forceBaseId = r.id('force_base_id');
@@ -236,7 +237,7 @@ export function parseOptions(raw: unknown): ParsedOptions {
   const options: Options = {
     serialPort: serialPort ?? '',
     fallbackPort,
-    vmiId: vmiId ?? '',
+    vmiId,
     assistantId,
     senderId,
     forceBaseId,

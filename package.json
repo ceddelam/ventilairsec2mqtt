@@ -1,6 +1,6 @@
 {
   "name": "ventilairsec2mqtt",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "description": "Bridge between Ventilairsec ventilation units (EnOcean MSC D1-079) and MQTT",
   "license": "MIT",
@@ -32,7 +32,15 @@
     "test": "node --test 'test/**/*.test.ts'",
     "check": "npm run typecheck && npm run lint && npm test",
     "test:integration": "node --test --test-concurrency=1 'test/integration/*.e2e.ts'",
-    "start": "node dist/main.js"
+    "test:compiled": "node scripts/test-compiled.mjs",
+    "test:node20": "node scripts/test-node20.mjs",
+    "test:app": "node --test --test-concurrency=1 'test/packaging/*.e2e.ts'",
+    "test:standalone": "node scripts/test-standalone.mjs",
+    "start": "node dist/main.js",
+    "app:local": "node scripts/app-local.mjs",
+    "pack": "node scripts/pack.mjs",
+    "changelog:sync": "node scripts/changelog.mjs",
+    "icons": "node scripts/render-icons.mjs"
   },
   "dependencies": {
     "mqtt": "^5.16.1",

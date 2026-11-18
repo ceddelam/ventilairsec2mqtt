@@ -176,7 +176,7 @@ const result = await link.send(buildSettingsTelegram({ functionByte: fn, oneShot
 ## Phase 2: MQTT bridge
 
 ```text
-main.ts           CLI, options, logging, signals                               main.ts, bridge/cli.ts
+main.ts           CLI (--help, --version), options, logging, signals           main.ts, bridge/cli.ts
   └─ startApp     composition: state file, broker, StickConnection, mqtt.js    bridge/app.ts
        └─ Bridge  link events → models → MQTT; MQTT orders → telegrams         bridge/bridge.ts
             ├─ UnitModel / AssistantModel   JSON states                        bridge/*-model.ts
@@ -205,7 +205,8 @@ injected, so every behaviour is tested with manual timers and doubles.
 | `bridge/watchdog.ts` | `AvailabilityTracker` (offline 30 min after the last frame, armed at start) and `IncidentTracker` (stick problem cleared 30 min after the last incident). |
 | `bridge/bridge.ts` | The behaviour below. |
 | `bridge/app.ts` | `startApp`: loads the state file, resolves the broker, creates the `StickConnection` and the mqtt.js client (last will `offline` on `<prefix>/bridge/state`, QoS 1, retained states), wires them to a `Bridge`; `stop()` publishes `offline`, closes the stick and the client. |
-| `bridge/log.ts` | Timestamped lines (`<ISO time> <LEVEL> <message>`) on stdout at `log_level` (`debug`, `info`, `warning`, `error`); raw frames at debug. |
+| `bridge/scan.ts` | Scan mode (empty `vmi_id`): `ScanBridge` publishes only the bridge device and state, transmits nothing; `DeviceScanner` guesses each Ventilairsec sender's role (unit reporting to us or to another receiver, Assistant, pairing request, paired sensor list, or "probably" from the frame shape and its peer) and logs each finding once. |
+| `bridge/log.ts` | Lines on stdout at `log_level` (`debug`, `info`, `warning`, `error`); raw frames at debug. Formats: `<ISO time> <LEVEL> <message>` by default, `<LEVEL> <message>` with `--no-timestamps`, and `<priority><LEVEL> <message>` (sd-daemon prefix, no timestamp) when stdout is the systemd journal (`JOURNAL_STREAM` matching stdout). |
 
 ### Behaviour choices
 
@@ -264,3 +265,97 @@ manual timers (`test/helpers/fake-timers.ts`); radio telegrams are asserted byte
 (`eclipse-mosquitto`, random local port, removed afterwards), runs `startApp` against the
 emulated TCP stick, feeds corpus telegrams and checks the retained discovery and states, then the
 radio telegram produced by an MQTT order. It is skipped when Docker or the image is missing.
+
+Bridge and CLI additions of phase 3 (scan mode, log formats) are tested the same way
+(`test/bridge/scan.test.ts`, `log.test.ts`, `config.test.ts`). `test/packaging.test.ts` checks the
+app files against the program: `config.yaml` schema keys = option keys, defaults accepted and
+equal to the program's, ID and topic patterns, English translations for every option, version,
+CHANGELOG copy, and the standalone unit and example options.
+
+## Packaging
+
+The same build (`dist/` + production `node_modules/`) ships in two ways.
+
+### Home Assistant app
+
+```text
+repository.yaml                    app repository (name, url)
+ventilairsec2mqtt/                 the app folder (slug ventilairsec2mqtt)
+  config.yaml                      amd64/aarch64, image ghcr.io/ceddelam/ventilairsec2mqtt, init: false,
+                                   mqtt:want, uart, options + schema (= bridge/config.ts)
+  Dockerfile                       multi-stage build, context = repository root
+  translations/en.yaml             option names and descriptions (English only)
+  README.md, DOCS.md, CHANGELOG.md, icon.png, logo.png
+assets/icon.svg, assets/logo.svg   sources of the PNGs (npm run icons)
+.dockerignore                      build context: package*.json, tsconfig*.json, src/ only
+packaging/apparmor.txt             AppArmor draft, not enabled (outside the app folder)
+```
+
+- **Dockerfile**: build stage on `node:24-alpine` (`npm ci --ignore-scripts`, `tsc`, `npm prune
+  --omit=dev`, type declarations and source maps removed, serialport prebuilds reduced to
+  `linux-x64` and `linux-arm64` musl); final stage `FROM ghcr.io/home-assistant/base:<pinned>`
+  (Alpine, s6-overlay v3) + `apk add nodejs`, `/app/{dist,node_modules,package.json}`. No
+  BuildKit-only syntax, so it also builds with the legacy builder. Labels: `io.hass.type=app`,
+  `io.hass.name/description/url`, OCI `title/description/source/licenses`; the builder actions
+  add `io.hass.version` and `io.hass.arch`.
+- **Process**: the program is the s6-overlay main program
+  (`CMD ["/command/with-contenv", "node", "/app/dist/main.js"]`): one process, its exit code is
+  the container's, `docker stop` delivers SIGTERM to it (it publishes `offline` and exits 0).
+  `with-contenv` is required: s6-overlay starts the main program with an empty environment,
+  which would lose `SUPERVISOR_TOKEN` and `TZ`.
+- **Build context**: the Dockerfile lives in the app folder but needs the sources. CI builds with
+  the repository root as context (`home-assistant/builder` `build-image` action:
+  `context: .`, `file: ventilairsec2mqtt/Dockerfile`). The Supervisor builds a local app (no
+  `image:`) from its folder alone: `npm run app:local` assembles `.local-app/ventilairsec2mqtt/`
+  (git-ignored) with the app files, `config.yaml` without `image:`, and the build inputs at the
+  same relative paths, so the same Dockerfile works there.
+- **CHANGELOG**: the root `CHANGELOG.md` is the single source. The app folder holds a copy
+  (a symbolic link breaks on some clones and in a local app copied to Home Assistant), written
+  by `npm run changelog:sync` and checked by `npm test`.
+- **Security rating**: 5 + 2 (no ingress, no host network, no port) = 7; `uart: true` does not
+  lower it; the AppArmor profile would add 1 once validated on a real Supervisor.
+
+### Standalone service
+
+```text
+packaging/standalone/ventilairsec2mqtt.service   systemd unit
+packaging/standalone/install.sh                  install / update / rollback / uninstall
+packaging/standalone/options.example.json        copied to /etc/ventilairsec2mqtt/options.json if missing
+scripts/pack.mjs                                 release/ventilairsec2mqtt-<version>.tar.gz + .sha256
+```
+
+- **Archive**: one folder `ventilairsec2mqtt-<version>/` with `dist/`, production
+  `node_modules/` (every serialport prebuild, so no npm or compiler on the target), `package.json`,
+  `package-lock.json`, `LICENSE`, `README.md`, the unit, `install.sh`, `options.example.json`.
+  Platform-independent and reproducible (sorted entries, root owner, `SOURCE_DATE_EPOCH` or last
+  commit date).
+- **Layout on the target**: `/opt/ventilairsec2mqtt/<version>/` (root-owned), `current` and
+  `previous` links switched atomically (`mv -T` of a new link), older versions removed;
+  `/etc/ventilairsec2mqtt/options.json` (root:ventilairsec2mqtt, 640, never overwritten);
+  `/var/lib/ventilairsec2mqtt/` (`StateDirectory=`, `VENTILAIRSEC2MQTT_STATE`); system user
+  `ventilairsec2mqtt` with `SupplementaryGroups=dialout`.
+- **Unit hardening**: `ProtectSystem=strict`, `ProtectHome`, `PrivateTmp`, no capabilities,
+  `NoNewPrivileges`, kernel / clock / hostname / cgroup protections, `DevicePolicy=closed` with
+  `DeviceAllow=char-ttyUSB` and `char-ttyACM` (a real device is needed, so no `PrivateDevices`),
+  `RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6 AF_NETLINK` (netlink for glibc's
+  `getaddrinfo()` with `AI_ADDRCONFIG`), `SystemCallFilter=@system-service ~@privileged`, no
+  `MemoryDenyWriteExecute` (V8 JIT), `MemoryMax=256M`, `--max-old-space-size=96`.
+  `systemd-analyze security` rates it 1.6 ("OK").
+- **Node 20**: the oldest supported version (Debian's package for ARMv6). The sources avoid newer
+  APIs; `npm run test:node20` compiles `src/` and `test/` to `.test-build/` (`tsconfig.test.json`)
+  and runs the unit tests in `node:20-alpine`.
+
+### Packaging tests (Docker only)
+
+- `npm run test:app` (`test/packaging/app.e2e.ts`): builds the image from the repository root and
+  from the local app folder; checks labels, contents (no sources, no dev dependencies, musl
+  bindings that load); starts on a private network Mosquitto, the emulated stick
+  (`test/packaging/fake-stick-server.ts`: TCP stick, control port, stand-in Supervisor API) and
+  the app with a mounted `/data/options.json`; checks the Supervisor broker lookup, the clock in
+  the container's time zone, discovery and states from corpus telegrams, an order reaching the
+  stick, scan mode, and `docker stop` (offline published, exit code 0).
+- `npm run test:standalone`: shellcheck, `npm run pack`, then
+  `test/packaging/standalone-install.sh` in `debian:trixie-slim` with Debian's `nodejs`:
+  install, permissions, idempotence, update, rollback, URL and checksum, uninstall and purge, the
+  program on Node 20 as the service user (journal log format, SIGTERM), `systemd-analyze verify`.
+

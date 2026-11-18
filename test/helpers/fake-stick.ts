@@ -193,9 +193,9 @@ export class FakeStickServer {
     });
   }
 
-  /** Listens on `port` (0 = any free port) and returns the port. */
-  async listen(port = 0): Promise<number> {
-    this.server.listen(port, '127.0.0.1');
+  /** Listens on `port` (0 = any free port) of `host` and returns the port. */
+  async listen(port = 0, host = '127.0.0.1'): Promise<number> {
+    this.server.listen(port, host);
     await once(this.server, 'listening');
     return (this.server.address() as AddressInfo).port;
   }
