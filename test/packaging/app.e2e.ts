@@ -5,7 +5,8 @@
  * broker, an emulated stick served over TCP with a stand-in Supervisor API
  * (`fake-stick-server.ts`), and the app with a mounted `/data/options.json`. Checks discovery,
  * states, an order reaching the stick, scan mode, and a clean `docker stop`. Everything it starts
- * is removed afterwards. Skipped when Docker or the base images are missing.
+ * is removed afterwards. Skipped when Docker or the base images are missing, unless
+ * `REQUIRE_DOCKER=1` (CI), where that is an error.
  */
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -44,6 +45,11 @@ async function dockerReady(): Promise<boolean> {
 
 const available = await dockerReady();
 if (!available) {
+  if (process.env.REQUIRE_DOCKER === '1') {
+    throw new Error(
+      `REQUIRE_DOCKER=1 but Docker or one of ${MOSQUITTO}, ${NODE}, ${BASE} is missing`,
+    );
+  }
   process.stdout.write(`# Docker or one of ${MOSQUITTO}, ${NODE}, ${BASE} missing: skipped\n`);
 }
 

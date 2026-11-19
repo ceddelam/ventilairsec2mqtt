@@ -13,12 +13,14 @@ import { fileURLToPath } from 'node:url';
 const source = fileURLToPath(new URL('../CHANGELOG.md', import.meta.url));
 const copy = fileURLToPath(new URL('../ventilairsec2mqtt/CHANGELOG.md', import.meta.url));
 const text = readFileSync(source, 'utf8');
-let current = '';
-try {
-  current = readFileSync(copy, 'utf8');
-} catch {
-  current = '';
-}
+const readCopy = () => {
+  try {
+    return readFileSync(copy, 'utf8');
+  } catch {
+    return '';
+  }
+};
+const current = readCopy();
 
 if (process.argv.includes('--check')) {
   if (current !== text) {

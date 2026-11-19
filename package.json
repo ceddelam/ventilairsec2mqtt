@@ -47,10 +47,10 @@
     "serialport": "^13.0.0"
   },
   "devDependencies": {
-    "@eslint/js": "^9.39.5",
+    "@eslint/js": "^10.0.1",
     "@serialport/binding-mock": "^10.2.2",
     "@types/node": "^22.20.5",
-    "eslint": "^9.39.5",
+    "eslint": "^10.15.0",
     "eslint-config-prettier": "^10.1.8",
     "prettier": "^3.10.1",
     "typescript": "~5.9.3",

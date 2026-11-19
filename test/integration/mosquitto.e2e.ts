@@ -1,7 +1,8 @@
 /**
  * End-to-end test against a real Mosquitto broker in Docker: the emulated stick over TCP, the
  * app composition used by `main.ts`, and an MQTT client watching the topics. Run with
- * `npm run test:integration`; skipped when Docker is not available.
+ * `npm run test:integration`; skipped when Docker is not available, unless `REQUIRE_DOCKER=1`
+ * (CI), where a missing Docker or image is an error.
  */
 import assert from 'node:assert/strict';
 import { execFile } from 'node:child_process';
@@ -33,6 +34,9 @@ async function dockerAvailable(): Promise<boolean> {
 
 const available = await dockerAvailable();
 if (!available) {
+  if (process.env.REQUIRE_DOCKER === '1') {
+    throw new Error(`REQUIRE_DOCKER=1 but Docker or the ${IMAGE} image is unavailable`);
+  }
   process.stdout.write(`# Docker or the ${IMAGE} image is unavailable: end-to-end test skipped\n`);
 }
 

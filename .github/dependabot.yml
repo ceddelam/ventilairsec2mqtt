@@ -10,6 +10,10 @@ updates:
         dependency-type: production
       development:
         dependency-type: development
+    ignore:
+      # Type definitions follow the oldest supported Node.js (package.json engines), not the latest.
+      - dependency-name: '@types/node'
+        update-types: ['version-update:semver-major']
     open-pull-requests-limit: 5
 
   - package-ecosystem: github-actions
@@ -24,6 +28,10 @@ updates:
     directory: /ventilairsec2mqtt
     schedule:
       interval: monthly
+    ignore:
+      # The build stage stays on the Node.js major that the base image's Alpine ships at run time.
+      - dependency-name: node
+        update-types: ['version-update:semver-major']
     groups:
       images:
         patterns: ['*']

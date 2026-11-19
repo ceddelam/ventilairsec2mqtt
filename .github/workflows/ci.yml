@@ -22,6 +22,9 @@ jobs:
     name: Lint, types and tests
     runs-on: ubuntu-24.04
     timeout-minutes: 15
+    env:
+      # Docker tests must run here: a missing Docker or image fails instead of skipping.
+      REQUIRE_DOCKER: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -38,7 +41,9 @@ jobs:
       - run: npm run build
 
       - name: Integration test against Mosquitto
-        run: npm run test:integration
+        run: |
+          docker pull --quiet eclipse-mosquitto:2.1.2-alpine
+          npm run test:integration
 
       - name: Compile the tests for Node 20
         run: npm run test:compiled -- --build-only

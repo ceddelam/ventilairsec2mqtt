@@ -40,6 +40,9 @@ jobs:
     name: App image and standalone service
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      # Docker tests must run here: a missing Docker or image fails instead of skipping.
+      REQUIRE_DOCKER: '1'
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -51,7 +54,12 @@ jobs:
       - run: npm ci --no-audit --no-fund
 
       - name: App image end-to-end test (amd64)
-        run: npm run test:app
+        run: |
+          for image in eclipse-mosquitto:2.1.2-alpine node:24-alpine \
+            ghcr.io/home-assistant/base:3.24-2026.11.0; do
+            docker pull --quiet "$image"
+          done
+          npm run test:app
 
       - name: Standalone install test (Debian 13)
         run: npm run test:standalone
