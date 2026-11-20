@@ -5,6 +5,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follo
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-11-20
+
+First version, for testing on real installations.
+
 ### Added
 
 - GitHub Actions: CI (Node 24 and 20, integration, lint), packaging tests, release workflow
