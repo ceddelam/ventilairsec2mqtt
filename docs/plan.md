@@ -68,7 +68,8 @@ Standalone service:
   (amd64 and aarch64 native runners, multi-arch manifest on ghcr.io), GitHub release with the
   standalone archive. Cosign signing off while the repository is private.
 - [x] Dependabot: grouped weekly npm updates, monthly actions and base image updates.
-- [ ] First green runs on GitHub, then a first release (`v0.1.0`).
+- [x] First green runs on GitHub, then a first release (`v0.1.0`): images for amd64 and
+  aarch64 on ghcr.io (private for now), standalone archive attached to the release.
 - [ ] When the repository goes public: make the ghcr.io package public, turn Cosign on.
 
 ## Phase 5 — Validation on a real installation
