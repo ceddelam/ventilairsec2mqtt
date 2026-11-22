@@ -5,6 +5,11 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), versions follo
 
 ## [Unreleased]
 
+### Changed
+
+- Docs: Raspberry Pi OS ignores the unit's memory limits (cgroup memory controller disabled);
+  observations from the first real installation added to the protocol spec.
+
 ## [0.1.0] - 2026-11-20
 
 First version, for testing on real installations.

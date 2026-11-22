@@ -284,7 +284,9 @@ Payload `07 90` then 9 bytes in this order [T][P]; **`FF` = leave unchanged**:
   one bit, send it back. The holiday bit (0) is cleared in that byte, holidays going through
   rank 3 [T].
 - Sending `1` at rank 9 along with a setting change asks for the state back [P]; without it, the
-  state comes back anyway [C].
+  state comes back anyway [C]: a mode change is answered by a `CMD 0` frame within a second.
+- A refresh request alone (rank 9 = `1`, every other rank `FF`) got no status frame on firmware
+  3.7: the next full status came with the periodic 10-minute cycle [C].
 - Mode changes (Eco, Standard) verified on firmware 3.7 [C].
 
 ### 6.2 `CMD 1` — clock
@@ -339,7 +341,8 @@ within the same floor.
 - [ ] Meaning of bits 24, 25, 29 of the function byte and of the "localisation" bit (79).
 - [ ] Content of the Assistant's `CMD 4` and of the short unit → Assistant frames.
 - [ ] Schedule format (`CMD 2` sent).
-- [ ] Actual effect of `COMMAND = 1` (refresh request) on firmware 3.7.
+- [ ] Actual effect of `COMMAND = 1` (refresh request) on firmware 3.7: no status frame seen in
+  answer to a refresh request alone; maybe only together with a setting change.
 - [ ] Whether the unit accepts the "disabled" values (preheating `4`, Hydro'R `6`, SolarR `0`) as
   orders, to switch a setpoint off.
 - [ ] Size of the chained pieces sent by the unit (only reassembled messages recorded so far).

@@ -103,6 +103,11 @@ The service is sandboxed (read-only system, no access to home folders, no privil
 devices): `systemd-analyze security ventilairsec2mqtt` shows the details. Local changes to the
 unit go in a drop-in (`sudo systemctl edit ventilairsec2mqtt`), which updates keep.
 
+On Raspberry Pi OS the kernel disables the cgroup memory controller (`cgroup_disable=memory` on
+the kernel command line), so the unit's `MemoryHigh` / `MemoryMax` are not applied there; the
+Node.js heap limit (`--max-old-space-size=96`) still is. The service uses about 60 MB of RAM on a
+Raspberry Pi Zero W.
+
 ## Update
 
 Download and run the installer of the new version, as for the install, or let the installer

@@ -56,7 +56,8 @@ Standalone service:
 - [x] Release archive (built code + production dependencies), systemd unit, install / update /
   rollback / uninstall script, tested in a Debian 13 container.
 - [x] Documentation: [install-standalone.md](install-standalone.md).
-- [ ] Run under systemd on a real Raspberry Pi (sandbox rules, ARMv6 serial binding).
+- [x] Run under systemd on a real Raspberry Pi (sandbox rules, ARMv6 serial binding): Raspberry
+  Pi Zero W, Node 20, about 60 MB of RAM.
 
 ## Phase 4 — GitHub CI/CD
 
@@ -74,8 +75,10 @@ Standalone service:
 
 ## Phase 5 — Validation on a real installation
 
-- [ ] Run each mode on a real installation (app and standalone service), check entities, orders
-  and automations, 1 to 2 weeks without discrepancy.
+- [x] Standalone service on a real installation: entities, orders (mode changes confirmed by
+  the unit), automations and dashboard switched to the new entities.
+- [ ] Standalone service: 1 to 2 weeks without discrepancy.
+- [ ] Home Assistant app on a real installation (as a local app while the image is private).
 
 ## Phase 6 — Release
 
